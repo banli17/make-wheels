@@ -11,5 +11,5 @@ let p = new Promise((resolve, reject) => {
 p.then((value) => {
     console.log(value)
 }, reason => {
-    console.log(reason)
+    console.log('reason', reason)
 })
