@@ -4,11 +4,13 @@ function resolvePromise(promise2, x, resolve, reject) {
         return reject(new TypeError('循环引用'))
     }
 
-    // 如果x是Promise
+    // 如果x是Promise或object，这里x可能是别人的promise
     if (typeof x === 'function' || (typeof x === 'object' && x !== null)) {
         let called;
         try {
+            // 可能是别人 Object.defineProperty定义的then，可能取时报错
             let then = x.then
+            // 是promise
             if (typeof then === 'function') {
                 then.call(x, y => {
                     if (called) return
@@ -125,7 +127,96 @@ class Promise {
         })
         return promise2
     }
+
+    catch (callback) {
+        return this.then(null, (reason) => {
+            return callback(reason)
+        })
+    }
+
+    // callback 需要执行，可能是异步。value,reason需要传下去
+    finally(callback) {
+        return this.then(value => {
+            // callback(value)
+            // return value
+            return Promise.resolve(callback()).then(() => value)
+        }, reason => {
+            // callback(reason)
+            // return reason
+            return Promise.resolve(callback()).then(() => {
+                throw reason
+            })
+        })
+    }
+
+    static resolve(value) {
+        return new Promise((resolve, reject) => resolve(value))
+    }
+    static reject(reason) {
+        return new Promise((resolve, reject) => reject(reason))
+    }
+
+    static race(args) {
+        return new Promise((resolve, reject) => {
+            args.forEach(arg => {
+                if (typeof arg === 'function' || (typeof arg === 'object' && arg !== null)) {
+                    let then = arg.then
+                    if (typeof then === 'function') {
+                        // 如果是promise，则执行，这里是用户写的promise
+                        then.call(arg, resolve, reject)
+                    } else {
+                        resolve(arg)
+                    }
+                } else {
+                    resolve(arg)
+                }
+            })
+        })
+    }
+
+    static all(args) {
+        return new Promise((resolve, reject) => {
+            let results = []
+            let i = 0
+            let processData = (r, index) => {
+                results[index] = r
+                if (++i === args.length) {
+                    resolve(results)
+                }
+            }
+            args.forEach((arg, index) => {
+                if (typeof arg === 'function' || (typeof arg === 'object') && arg !== null) {
+                    let then = arg.then
+                    if (typeof then === 'function') {
+                        then.call(arg, y => {
+                            processData(y, index)
+                        }, reject)
+                    } else {
+                        processData(arg, index)
+                    }
+                } else {
+                    processData(arg, index)
+                }
+            })
+        })
+    }
+
+    // 用于将node中的api转为promise
+    static promisify(fn) {
+        return (...args) => {
+            return new Promise((resolve, reject) => {
+                fn(...args, (err, data) => {
+                    if (err) {
+                        return reject(err)
+                    }
+                    resolve(data)
+                })
+            })
+        }
+    }
+
 }
+
 
 Promise.deferred = () => {
     let dfd = {}

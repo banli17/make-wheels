@@ -19,5 +19,4 @@ p.then(() => {
 }, (e) => {
     console.log('err2',e)
 })
-
 console.log(3)
