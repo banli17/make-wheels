@@ -128,7 +128,7 @@ class Promise {
         return promise2
     }
 
-    catch (callback) {
+    catch(callback) {
         return this.then(null, (reason) => {
             return callback(reason)
         })
@@ -152,6 +152,7 @@ class Promise {
     static resolve(value) {
         return new Promise((resolve, reject) => resolve(value))
     }
+
     static reject(reason) {
         return new Promise((resolve, reject) => reject(reason))
     }
