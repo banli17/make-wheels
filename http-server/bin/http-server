@@ -1,0 +1,17 @@
+#!/usr/bin/env node
+
+const packageConfig = require('../package.json')
+const program = require('commander')
+let Server = require('../src/index')
+
+let parser = program
+    .option('-p, --port <p>', 'set server port') // {port:'2000'}
+    // .option('-p', 'set server port') opts() {P: true}
+    .option('-o, --open [url]', 'browser open url') // {port:'2000'}
+    .parse(process.argv)
+
+// console.log(parser)
+
+let server = new Server(parser)
+
+server.start()
